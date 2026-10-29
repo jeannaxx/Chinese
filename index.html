@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HSK 3.0 ภาษาไทย</title>
-<meta name="description" content="ท่องศัพท์ภาษาจีน HSK 3.0 ระดับ 1–6 พร้อมพินอินและความหมายภาษาไทย: แฟลชการ์ด แบบทดสอบ เขียนพินอิน และเรียงประโยค">
+<meta name="description" content="ท่องศัพท์ภาษาจีน HSK 3.0 ระดับ 1–6 พร้อมพินอิน ความหมายภาษาไทยและภาษาอังกฤษ: แฟลชการ์ด แบบทดสอบ เขียนพินอิน และเรียงประโยค">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -77,6 +77,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 .row-py{font-size:14px;font-weight:600}
 .row-pos{font-size:12px;color:var(--muted)}
 .row-th{font-size:14px}
+.row-en{font-size:13px;color:var(--muted)}
 .known-dot{font-size:11px;color:var(--good);font-weight:600}
 .icon-btn{width:44px;height:44px;border-radius:22px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;flex:none}
 .icon-btn.speak{background:var(--accent-soft);color:var(--accent)}
@@ -233,7 +234,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
   function normPy(s) { return bare(s.toLowerCase()).replace(/ü|v/g, 'u').replace(/[^a-z]/g, ''); }
 
   var W = (window.HSK || []).map(function (r) {
-    return { w: r[0], p: r[1], pos: r[2], level: r[3], th: r[4], ans: r[1].split('/').map(normPy) };
+    return { w: r[0], p: r[1], pos: r[2], level: r[3], th: r[4], en: r[5] || '', ans: r[1].split('/').map(normPy) };
   });
   var S = window.SENTENCES || [];
   var byWord = {}; W.forEach(function (x) { byWord[x.w] = x; });
@@ -242,6 +243,13 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
   var known = new Set(store.get('known', []));
   var saved = new Set(store.get('saved', []));
   var level = store.get('level', 1);
+  var ml = store.get('ml', 'th') === 'en' ? 'en' : 'th';
+  function mean(x) { return ml === 'en' ? x.en : x.th; }
+  function langChips() {
+    return '<span style="flex:none;width:1px;background:var(--line);margin:4px 2px"></span>' + [['th', 'ตอบเป็นไทย'], ['en', 'English']].map(function (o) {
+      return '<button class="chip" data-act="ml" data-v="' + o[0] + '" aria-pressed="' + (ml === o[0]) + '">' + o[1] + '</button>';
+    }).join('');
+  }
   if (level !== 'all' && LEVELS.indexOf(level) < 0) level = 1;
   function saveSets() { store.set('known', Array.from(known)); store.set('saved', Array.from(saved)); }
   function pool() { return level === 'all' ? W : W.filter(function (x) { return x.level === level; }); }
@@ -282,15 +290,15 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
     var k = p.filter(function (x) { return known.has(x.w); }).length;
     var pct = p.length ? Math.round(k / p.length * 100) : 0;
     app.innerHTML =
-      '<header class="hero"><div class="hero-top"><div><h1><span class="seal">汉语</span>HSK 3.0</h1><p>ศัพท์ HSK ระดับ 1–6 · ' + W.length.toLocaleString() + ' คำ · พินอินและความหมายไทย</p></div>' +
+      '<header class="hero"><div class="hero-top"><div><h1><span class="seal">汉语</span>HSK 3.0</h1><p>ศัพท์ HSK ระดับ 1–6 · ' + W.length.toLocaleString() + ' คำ · พินอิน ไทย และ English</p></div>' +
       '<div class="ring" style="background:conic-gradient(#F5B841 0 ' + pct + '%, rgba(255,255,255,.2) ' + pct + '% 100%)" role="img" aria-label="จำได้แล้ว ' + pct + ' เปอร์เซ็นต์"><span>' + pct + '%</span></div></div>' +
       '<label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>' +
-      '<span class="sr">ค้นหาคำศัพท์</span><input id="q" type="search" placeholder="ค้นหา 汉字 / pinyin / ภาษาไทย" value="' + esc(st.listQ) + '" autocomplete="off"></label></header>' +
+      '<span class="sr">ค้นหาคำศัพท์</span><input id="q" type="search" placeholder="ค้นหา 汉字 / pinyin / ไทย / English" value="' + esc(st.listQ) + '" autocomplete="off"></label></header>' +
       levelChips('<button class="chip" data-act="savedOnly" aria-pressed="' + st.listSaved + '">★ ที่บันทึก</button>') +
       '<div class="meta"><span id="count"></span><span>จำได้แล้ว ' + k + '/' + p.length + '</span></div>' +
       '<div class="legend" aria-label="สีวรรณยุกต์"><span class="t1"><b>ā</b> เสียง 1</span><span class="t2"><b>á</b> เสียง 2</span><span class="t3"><b>ǎ</b> เสียง 3</span><span class="t4"><b>à</b> เสียง 4</span><span class="t5"><b>a</b> เสียงเบา</span></div>' +
       '<div class="list" id="list"></div><div id="more"></div>' +
-      '<div class="credit">คำศัพท์และระดับตามหลักสูตรสอบ HSK 3.0 (新版HSK考试大纲, 2025)<br>ความหมายภาษาไทยเขียนเพิ่มสำหรับเว็บนี้ · ทำเพื่อแจกฟรี<br>' +
+      '<div class="credit">คำศัพท์และระดับตามหลักสูตรสอบ HSK 3.0 (新版HSK考试大纲, 2025)<br>ความหมายไทยและอังกฤษเขียนเพิ่มสำหรับเว็บนี้ (อังกฤษอ้างอิง CC-CEDICT) · ทำเพื่อแจกฟรี<br>' +
       (st.armReset ? '<button data-act="reset">กดอีกครั้งเพื่อยืนยันการล้าง</button> <button data-act="resetCancel">ยกเลิก</button>' : '<button data-act="armReset">ล้างความคืบหน้าทั้งหมด</button>') + '</div>';
     document.getElementById('q').addEventListener('input', function (e) { st.listQ = e.target.value; st.listLimit = 200; renderRows(); });
     renderRows();
@@ -301,7 +309,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
     var rows = src.filter(function (x) {
       if (st.listSaved && !saved.has(x.w)) return false;
       if (!q) return true;
-      return x.w.indexOf(q) >= 0 || x.th.indexOf(q) >= 0 || (qn && x.ans.some(function (a) { return a.indexOf(qn) === 0; }));
+      return x.w.indexOf(q) >= 0 || x.th.indexOf(q) >= 0 || (q.length > 2 && x.en.toLowerCase().indexOf(q.toLowerCase()) >= 0) || (qn && x.ans.some(function (a) { return a.indexOf(qn) === 0; }));
     });
     document.getElementById('count').textContent = rows.length.toLocaleString() + ' คำ' + (q ? ' (ค้นหาทุกระดับ)' : '');
     var list = document.getElementById('list');
@@ -315,7 +323,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
       return '<div class="row"><div class="row-main"><div class="row-head"><span class="row-word" lang="zh-CN">' + colorHz(x.w, x.p) + '</span>' +
         '<span class="row-py">' + colorPy(x.p) + '</span>' + lvBadge(x.level) +
         (known.has(x.w) ? '<span class="known-dot">✓ จำแล้ว</span>' : '') + '</div>' +
-        '<span class="row-th">' + esc(x.th) + (x.pos ? ' <span class="row-pos">· ' + esc(x.pos) + '</span>' : '') + '</span></div>' +
+        '<span class="row-th">' + esc(x.th) + (x.pos ? ' <span class="row-pos">· ' + esc(x.pos) + '</span>' : '') + '</span>' + (x.en ? '<span class="row-en" lang="en">' + esc(x.en) + '</span>' : '') + '</div>' +
         '<button class="icon-btn" data-act="star" data-k="' + esc(x.w) + '" aria-pressed="' + on + '" aria-label="บันทึกคำ ' + esc(x.w) + '">' + (on ? ICON_STAR_ON : ICON_STAR) + '</button>' +
         '<button class="icon-btn speak" data-act="speak" data-t="' + esc(x.w) + '" aria-label="ฟังเสียง ' + esc(x.w) + '">' + ICON_SPEAK + '</button></div>';
     }).join('');
@@ -342,7 +350,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
       '<div class="bar"><i style="width:' + Math.round((f.i + 1) / n * 100) + '%"></i></div>' + levelChips() +
       '<div class="pad"><button class="card flash" data-act="flip" aria-label="พลิกการ์ด">' + lvBadge(c.level) +
       '<span class="big-hz" lang="zh-CN">' + (f.back ? colorHz(c.w, c.p) : esc(c.w)) + '</span>' +
-      (f.back ? '<span class="big-py">' + colorPy(c.p) + '</span><div class="back"><span class="th">' + esc(c.th) + '</span>' +
+      (f.back ? '<span class="big-py">' + colorPy(c.p) + '</span><div class="back"><span class="th">' + esc(c.th) + '</span>' + (c.en ? '<span class="sub" lang="en" style="font-size:16px;color:var(--ink)">' + esc(c.en) + '</span>' : '') +
         (c.pos ? '<span class="sub">' + esc(c.pos) + '</span>' : '') +
         (ex ? '<span class="ex"><span class="hz" lang="zh-CN">' + esc(ex[0].replace(/ /g, '')) + '。</span><br>' + esc(ex[1]) + '</span>' : '') + '</div>'
               : '<span class="hint">ลองนึกพินอินและความหมาย แล้วแตะการ์ดเพื่อดูเฉลย</span>') +
@@ -355,9 +363,9 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
   function newQuiz() {
     var p = pool();
     var qs = shuffle(p).slice(0, 10).map(function (x) {
-      var wrong = [];
-      shuffle(p.length > 20 ? p : W).some(function (y) { if (y.th !== x.th && wrong.indexOf(y.th) < 0) wrong.push(y.th); return wrong.length === 3; });
-      return { w: x, opts: shuffle([x.th].concat(wrong)) };
+      var wrong = [], right = mean(x);
+      shuffle(p.length > 20 ? p : W).some(function (y) { var m = mean(y); if (m && m !== right && y.th !== x.th && wrong.indexOf(m) < 0) wrong.push(m); return wrong.length === 3; });
+      return { w: x, right: right, opts: shuffle([right].concat(wrong)) };
     });
     st.quiz = { qs: qs, i: 0, picked: null, res: [] };
   }
@@ -368,25 +376,25 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
       var miss = z.qs.filter(function (q, i) { return !z.res[i]; });
       app.innerHTML = topbar('แบบทดสอบ') + levelChips() +
         '<div class="done"><div class="score">' + score + '/' + n + '</div><div>' + (score >= 8 ? '太棒了！เก่งมาก' : score >= 5 ? 'ดีแล้ว ฝึกต่ออีกนิด' : 'ไม่เป็นไร ลองทบทวนแล้วทำใหม่') + '</div></div>' +
-        (miss.length ? '<div class="pad sub">คำที่ตอบผิด</div><div class="miss">' + miss.map(function (q) { return '<div><strong class="hz" lang="zh-CN">' + esc(q.w.w) + '</strong><span>' + esc(q.w.p) + ' · ' + esc(q.w.th) + '</span></div>'; }).join('') + '</div>' : '') +
+        (miss.length ? '<div class="pad sub">คำที่ตอบผิด</div><div class="miss">' + miss.map(function (q) { return '<div><strong class="hz" lang="zh-CN">' + esc(q.w.w) + '</strong><span>' + esc(q.w.p) + ' · ' + esc(q.w.th) + (q.w.en ? ' · ' + esc(q.w.en) : '') + '</span></div>'; }).join('') + '</div>' : '') +
         '<div class="pad" style="padding-top:18px"><button class="btn btn-primary" data-act="quizNew">ทำชุดใหม่</button></div>';
       return;
     }
     var q = z.qs[z.i], letters = ['A', 'B', 'C', 'D'];
     var segs = z.qs.map(function (x, i) { return '<i class="' + (i < z.res.length ? (z.res[i] ? 'ok' : 'no') : i === z.i ? 'cur' : '') + '"></i>'; }).join('');
     app.innerHTML = topbar('แบบทดสอบ · ข้อ ' + (z.i + 1) + '/' + n, '<span class="pill" style="background:var(--warn-soft);color:var(--warn)">คะแนน ' + score + '</span>') +
-      '<div class="segs" style="grid-template-columns:repeat(' + n + ',minmax(0,1fr))">' + segs + '</div>' + levelChips() +
+      '<div class="segs" style="grid-template-columns:repeat(' + n + ',minmax(0,1fr))">' + segs + '</div>' + levelChips(langChips()) +
       '<section class="q-card"><span class="k">คำนี้แปลว่าอะไร?</span><span class="w" lang="zh-CN">' + esc(q.w.w) + '</span><span class="s">' +
       (z.picked !== null ? esc(q.w.p) + ' · ' : '') + 'HSK ' + q.w.level + '</span>' +
       '<button class="icon-btn" data-act="speak" data-t="' + esc(q.w.w) + '" aria-label="ฟังเสียง">' + ICON_SPEAK + '</button></section>' +
       '<div class="opts">' + q.opts.map(function (o, i) {
         var cls = '';
-        if (z.picked !== null) { if (o === q.w.th) cls = ' right'; else if (i === z.picked) cls = ' wrong'; }
+        if (z.picked !== null) { if (o === q.right) cls = ' right'; else if (i === z.picked) cls = ' wrong'; }
         return '<button class="opt' + cls + '" data-act="pick" data-i="' + i + '"' + (z.picked !== null ? ' disabled' : '') + '><span class="dot">' + letters[i] + '</span><span>' + esc(o) + '</span></button>';
       }).join('') + '</div>' +
       (z.picked !== null ? (function () {
-        var ok = q.opts[z.picked] === q.w.th, ex = exampleFor(q.w.w);
-        return '<div class="fb ' + (ok ? 'ok' : 'no') + '"><strong>' + (ok ? '对了！ถูกต้อง' : 'ยังไม่ใช่') + '</strong> <span class="hz" lang="zh-CN">' + esc(q.w.w) + '</span> ' + esc(q.w.p) + ' = ' + esc(q.w.th) +
+        var ok = q.opts[z.picked] === q.right, ex = exampleFor(q.w.w);
+        return '<div class="fb ' + (ok ? 'ok' : 'no') + '"><strong>' + (ok ? '对了！ถูกต้อง' : 'ยังไม่ใช่') + '</strong> <span class="hz" lang="zh-CN">' + esc(q.w.w) + '</span> ' + esc(q.w.p) + ' = ' + esc(q.w.th) + (q.w.en ? ' · <span lang="en">' + esc(q.w.en) + '</span>' : '') +
           (ex ? '<br><span class="plain hz" lang="zh-CN">' + esc(ex[0].replace(/ /g, '')) + '。</span>' : '') + '</div>' +
           '<div class="pad" style="padding-top:16px;padding-bottom:16px"><button class="btn btn-dark" data-act="quizNext">' + (z.i + 1 < n ? 'ข้อต่อไป →' : 'ดูผลคะแนน') + '</button></div>';
       })() : '');
@@ -406,8 +414,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
     }
     var q = s.qs[s.i], target = q.ans[0];
     var pat = target.split('').map(function (c, i) { return i < s.hints ? c : '_'; }).join('');
-    app.innerHTML = topbar('เขียนพินอิน · ข้อ ' + (s.i + 1) + '/' + n, '<span class="pill" style="background:var(--good-soft);color:var(--good)">ถูก ' + s.score + '</span>') + levelChips() +
-      '<div class="pad"><section class="card" style="margin-top:4px"><span class="sub">พิมพ์พินอินของคำที่แปลว่า</span><span style="font-size:28px;font-weight:700;color:var(--accent);line-height:1.35">' + esc(q.th) + '</span>' +
+    app.innerHTML = topbar('เขียนพินอิน · ข้อ ' + (s.i + 1) + '/' + n, '<span class="pill" style="background:var(--good-soft);color:var(--good)">ถูก ' + s.score + '</span>') + levelChips(langChips()) +
+      '<div class="pad"><section class="card" style="margin-top:4px"><span class="sub">พิมพ์พินอินของคำที่แปลว่า</span><span style="font-size:28px;font-weight:700;color:var(--accent);line-height:1.35"' + (ml === 'en' ? ' lang="en"' : '') + '>' + esc(mean(q)) + '</span>' +
       '<span class="sub">HSK ' + q.level + ' · ' + Array.from(q.w).length + ' ตัวอักษรจีน' + (q.pos ? ' · ' + esc(q.pos) : '') + '</span>' +
       (s.checked ? '<span class="big-hz" style="font-size:44px" lang="zh-CN">' + colorHz(q.w, q.p) + '</span>' : '') +
       '<div class="pattern mono" aria-label="คำใบ้">' + esc(pat) + '</div></section></div>' +
@@ -467,6 +475,9 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
         level = v === 'all' ? 'all' : +v; store.set('level', level);
         st.flash = st.quiz = st.spell = null; st.listLimit = 200; break;
       }
+      case 'ml':
+        ml = el.getAttribute('data-v') === 'en' ? 'en' : 'th'; store.set('ml', ml);
+        st.quiz = st.spell = null; break;
       case 'savedOnly': st.listSaved = !st.listSaved; break;
       case 'star': {
         var k = el.getAttribute('data-k');
@@ -488,7 +499,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
       case 'pick':
         if (z.picked !== null) return;
         z.picked = +el.getAttribute('data-i');
-        z.res.push(z.qs[z.i].opts[z.picked] === z.qs[z.i].w.th);
+        z.res.push(z.qs[z.i].opts[z.picked] === z.qs[z.i].right);
         break;
       case 'quizNext': z.i++; z.picked = null; break;
       case 'quizNew': newQuiz(); break;
@@ -496,7 +507,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
       case 'spellCheck': {
         if (s.checked) return;
         var q = s.qs[s.i], typed = normPy(s.value);
-        s.ok = !!typed && (q.ans.indexOf(typed) >= 0 || W.some(function (x) { return x.th === q.th && x.ans.indexOf(typed) >= 0; }));
+        s.ok = !!typed && (q.ans.indexOf(typed) >= 0 || W.some(function (x) { return mean(x) === mean(q) && x.ans.indexOf(typed) >= 0; }));
         s.checked = true;
         if (s.ok) { s.score++; known.add(q.w); saveSets(); }
         else if (!s.retried[q.w]) { s.retried[q.w] = 1; s.qs.push(q); }
